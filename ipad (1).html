@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>Coupons Repas — Kiosque</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Syne:wght@700;800&display=swap');
+  :root{--bg:#0f1117;--surface:#1a1d27;--card:#21253a;--border:#2e3347;--accent:#6c7cff;--accent2:#ff6b6b;--success:#4ecb8d;--warn:#f5a623;--text:#e8eaf6;--muted:#7b82a8;--radius:16px;}
+  *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+  body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;font-size:16px;min-height:100vh;overflow-x:hidden;}
+  .screen{display:none;min-height:100vh;flex-direction:column;}
+  .screen.active{display:flex;}
+
+  /* Config */
+  #screen-config{align-items:center;justify-content:center;padding:40px 24px;}
+  #screen-config .box{background:var(--surface);border:1px solid var(--border);border-radius:20px;padding:36px 32px;width:100%;max-width:480px;}
+  #screen-config h1{font-family:'Syne',sans-serif;font-size:28px;margin-bottom:6px;}
+  #screen-config p{color:var(--muted);margin-bottom:24px;font-size:15px;line-height:1.6;}
+  #screen-config input{width:100%;padding:14px 16px;border-radius:10px;border:1px solid var(--border);background:var(--bg);color:var(--text);font-size:14px;font-family:monospace;margin-bottom:14px;}
+  #screen-config input:focus{outline:none;border-color:var(--accent);}
+  .btn-connect{width:100%;padding:16px;background:var(--accent);color:#fff;border:none;border-radius:10px;font-size:16px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif;}
+
+  /* Search */
+  .kiosk-header{background:var(--surface);border-bottom:1px solid var(--border);padding:20px 28px 16px;text-align:center;}
+  .kiosk-header h1{font-family:'Syne',sans-serif;font-size:24px;font-weight:800;}
+  .kiosk-header p{color:var(--muted);font-size:14px;margin-top:4px;}
+  .search-area{padding:24px;}
+  .search-wrap{position:relative;}
+  .search-wrap input{width:100%;padding:18px 20px 18px 52px;font-size:18px;border-radius:14px;border:2px solid var(--border);background:var(--surface);color:var(--text);font-family:'Inter',sans-serif;}
+  .search-wrap input:focus{outline:none;border-color:var(--accent);}
+  .search-wrap .icon{position:absolute;left:18px;top:50%;transform:translateY(-50%);font-size:20px;}
+  .people-grid{padding:0 24px 24px;display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:12px;}
+  .person-btn{background:var(--surface);border:2px solid var(--border);border-radius:var(--radius);padding:18px 16px;cursor:pointer;text-align:left;transition:all .15s;color:var(--text);font-family:'Inter',sans-serif;width:100%;}
+  .person-btn:hover,.person-btn:focus{border-color:var(--accent);background:var(--card);outline:none;}
+  .person-btn .p-nom{font-weight:600;font-size:16px;}
+  .person-btn .p-prenom{font-size:14px;color:var(--muted);margin-top:2px;}
+  .person-btn .p-status{margin-top:10px;font-size:12px;font-weight:500;}
+  .person-btn.done{border-color:var(--success);opacity:.6;}
+  .person-btn.done .p-status{color:var(--success);}
+  .person-btn.partial .p-status{color:var(--warn);}
+
+  /* Confirm */
+  #screen-confirm{padding:32px 24px;align-items:center;justify-content:center;}
+  .confirm-card{background:var(--surface);border:1px solid var(--border);border-radius:20px;padding:32px;width:100%;max-width:540px;}
+  .confirm-card h2{font-family:'Syne',sans-serif;font-size:26px;margin-bottom:4px;}
+  .confirm-card .sub{color:var(--muted);font-size:15px;margin-bottom:28px;}
+  .coupon-selector{margin-bottom:28px;}
+  .coupon-selector label{display:block;font-size:13px;color:var(--muted);text-transform:uppercase;letter-spacing:.6px;margin-bottom:12px;}
+  .coupon-btns{display:flex;gap:10px;flex-wrap:wrap;}
+  .coupon-num{width:58px;height:58px;border-radius:12px;border:2px solid var(--border);background:var(--card);color:var(--text);font-size:22px;font-weight:700;cursor:pointer;font-family:'Syne',sans-serif;transition:all .15s;display:flex;align-items:center;justify-content:center;}
+  .coupon-num.selected{background:var(--accent);border-color:var(--accent);color:#fff;}
+  .coupon-num:hover:not(.selected){border-color:var(--accent);}
+  .sig-section label{display:block;font-size:13px;color:var(--muted);text-transform:uppercase;letter-spacing:.6px;margin-bottom:10px;}
+  .sig-canvas-wrap{border:2px dashed var(--border);border-radius:14px;background:#fff;position:relative;overflow:hidden;touch-action:none;}
+  .sig-canvas-wrap canvas{display:block;width:100%;}
+  .sig-hint{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:#bbb;font-size:15px;pointer-events:none;transition:opacity .2s;}
+  .sig-actions{display:flex;justify-content:flex-end;margin-top:8px;}
+  .btn-clear{background:none;border:1px solid var(--border);color:var(--muted);padding:7px 14px;font-size:13px;border-radius:8px;cursor:pointer;font-family:'Inter',sans-serif;}
+  .btn-clear:hover{border-color:var(--accent2);color:var(--accent2);}
+  .confirm-actions{display:flex;gap:12px;margin-top:28px;}
+  .confirm-actions button{flex:1;padding:16px;font-size:16px;font-weight:600;border-radius:12px;border:none;cursor:pointer;font-family:'Inter',sans-serif;transition:opacity .15s;}
+  .confirm-actions button:hover{opacity:.88;}
+  .btn-back{background:var(--card);color:var(--muted);}
+  .btn-confirm{background:var(--success);color:#0f1117;}
+  .btn-confirm:disabled{opacity:.4;cursor:not-allowed;}
+
+  /* Success */
+  #screen-success{align-items:center;justify-content:center;padding:40px 24px;text-align:center;}
+  .success-icon{font-size:72px;margin-bottom:24px;animation:pop .4s cubic-bezier(.36,.07,.19,.97);}
+  @keyframes pop{0%{transform:scale(0)}70%{transform:scale(1.15)}100%{transform:scale(1)}}
+  #screen-success h2{font-family:'Syne',sans-serif;font-size:30px;margin-bottom:10px;}
+  #screen-success p{color:var(--muted);font-size:16px;margin-bottom:32px;}
+  .btn-back-main{background:var(--accent);color:#fff;border:none;border-radius:12px;padding:16px 36px;font-size:17px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif;}
+
+  /* Spinner */
+  #spinner-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);align-items:center;justify-content:center;z-index:999;}
+  #spinner-overlay.on{display:flex;}
+  .sp{width:44px;height:44px;border:4px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .8s linear infinite;}
+  @keyframes spin{to{transform:rotate(360deg);}}
+</style>
+</head>
+<body>
+
+<div class="screen active" id="screen-config">
+  <div class="box">
+    <h1>🍽️ Coupons Repas</h1>
+    <p>Entre l'URL de ton Apps Script pour connecter le formulaire à ta Google Sheet.</p>
+    <input type="text" id="cfg-url" placeholder="https://script.google.com/macros/s/…/exec"/>
+    <button class="btn-connect" onclick="saveConfig()">Connecter →</button>
+  </div>
+</div>
+
+<div class="screen" id="screen-search">
+  <div class="kiosk-header">
+    <h1>🍽️ Coupons Repas</h1>
+    <p>Trouve ton nom et confirme tes coupons</p>
+  </div>
+  <div class="search-area">
+    <div class="search-wrap">
+      <span class="icon">🔍</span>
+      <input type="text" id="kiosk-search" placeholder="Tape ton nom…" oninput="filterPeople()" autocomplete="off" autocorrect="off" spellcheck="false">
+    </div>
+  </div>
+  <div class="people-grid" id="people-grid"></div>
+</div>
+
+<div class="screen" id="screen-confirm">
+  <div class="confirm-card">
+    <h2 id="c-name"></h2>
+    <div class="sub" id="c-sub"></div>
+    <div class="coupon-selector">
+      <label>Combien de coupons tu prends ?</label>
+      <div class="coupon-btns" id="coupon-btns"></div>
+    </div>
+    <div class="sig-section">
+      <label>Ta signature</label>
+      <div class="sig-canvas-wrap" id="sig-wrap">
+        <canvas id="sig-canvas" height="180"></canvas>
+        <div class="sig-hint" id="sig-hint">✍️ Signe ici</div>
+      </div>
+      <div class="sig-actions"><button class="btn-clear" onclick="clearSig()">Effacer</button></div>
+    </div>
+    <div class="confirm-actions">
+      <button class="btn-back" onclick="goSearch()">← Retour</button>
+      <button class="btn-confirm" id="btn-confirm" onclick="submitConfirm()" disabled>Confirmer ✓</button>
+    </div>
+  </div>
+</div>
+
+<div class="screen" id="screen-success">
+  <div class="success-icon">✅</div>
+  <h2 id="s-name"></h2>
+  <p id="s-msg"></p>
+  <button class="btn-back-main" onclick="goSearch()">← Retour à la liste</button>
+</div>
+
+<div id="spinner-overlay"><div class="sp"></div></div>
+
+<script>
+let people = [], currentPerson = null, selectedCoupons = 0, isSigned = false;
+let sigCanvas, sigCtx, sigDrawing = false;
+
+function saveConfig() {
+  const url = document.getElementById('cfg-url').value.trim();
+  if (!url) return;
+  localStorage.setItem('apiUrl', url);
+  showScreen('search');
+  loadPeople();
+}
+function getApiUrl() { return localStorage.getItem('apiUrl') || ''; }
+
+window.addEventListener('DOMContentLoaded', () => {
+  const url = getApiUrl();
+  if (url) { showScreen('search'); loadPeople(); }
+  initSigCanvas();
+});
+
+function showScreen(name) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById('screen-'+name).classList.add('active');
+}
+
+// GET uniquement
+async function apiFetch(action, params = {}) {
+  const base = getApiUrl();
+  const qs = new URLSearchParams({ action, ...params }).toString();
+  try {
+    const ctrl = new AbortController();
+    const timer = setTimeout(() => ctrl.abort(), 15000);
+    const res = await fetch(base + '?' + qs, { signal: ctrl.signal });
+    clearTimeout(timer);
+    return await res.json();
+  } catch(e) {
+    console.error('API error:', e);
+    return null;
+  }
+}
+
+// Signature via POST no-cors (on ne peut pas lire la réponse, mais ça écrit dans le sheet)
+async function apiSaveSignature(rowIndex, recupere, signature) {
+  const base = getApiUrl();
+  await fetch(base, {
+    method: 'POST',
+    mode: 'no-cors',
+    headers: { 'Content-Type': 'text/plain' },
+    body: JSON.stringify({ action: 'update', rowIndex, recupere, signature })
+  });
+}
+
+async function loadPeople() {
+  setSpinner(true);
+  const data = await apiFetch('getAll');
+  setSpinner(false);
+  if (!data?.ok) {
+    document.getElementById('people-grid').innerHTML =
+      `<div style="color:var(--accent2);grid-column:1/-1;padding:20px;text-align:center">❌ Impossible de charger la liste. Vérifie l'URL Apps Script.</div>`;
+    return;
+  }
+  people = data.people || [];
+  renderPeople(people);
+}
+
+function filterPeople() {
+  const q = document.getElementById('kiosk-search').value.toLowerCase();
+  renderPeople(q ? people.filter(p => (p.nom+' '+p.prenom).toLowerCase().includes(q)) : people);
+}
+
+function renderPeople(list) {
+  const grid = document.getElementById('people-grid');
+  if (!list.length) {
+    grid.innerHTML = `<div style="color:var(--muted);text-align:center;grid-column:1/-1;padding:40px">Aucun résultat</div>`;
+    return;
+  }
+  grid.innerHTML = list.map(p => {
+    const done    = p.signature && p.recupere >= p.autorise;
+    const partial = p.signature && p.recupere < p.autorise;
+    const cls     = done ? 'done' : partial ? 'partial' : '';
+    const status  = done    ? `✅ ${p.recupere}/${p.autorise} coupons pris`
+                  : partial ? `⚠️ ${p.recupere}/${p.autorise} pris`
+                  : `${p.autorise} coupon(s) disponible(s)`;
+    return `<button class="person-btn ${cls}" onclick="selectPerson(${p.rowIndex})">
+      <div class="p-nom">${p.nom}</div>
+      <div class="p-prenom">${p.prenom}</div>
+      <div class="p-status">${status}</div>
+    </button>`;
+  }).join('');
+}
+
+function selectPerson(rowIndex) {
+  currentPerson = people.find(p => p.rowIndex === rowIndex);
+  if (!currentPerson) return;
+  document.getElementById('c-name').textContent = currentPerson.prenom + ' ' + currentPerson.nom;
+  document.getElementById('c-sub').textContent  = `Tu as droit à ${currentPerson.autorise} coupon(s). Tu en as déjà pris ${currentPerson.recupere}.`;
+  const container = document.getElementById('coupon-btns');
+  container.innerHTML = '';
+  for (let i = 0; i <= currentPerson.autorise; i++) {
+    const btn = document.createElement('button');
+    btn.className = 'coupon-num' + (i===0?' selected':'');
+    btn.textContent = i;
+    btn.onclick = () => selectCoupon(i);
+    container.appendChild(btn);
+  }
+  selectedCoupons = 0;
+  clearSig();
+  showScreen('confirm');
+  resizeSigCanvas();
+}
+
+function selectCoupon(n) {
+  selectedCoupons = n;
+  document.querySelectorAll('.coupon-num').forEach((b,i) => b.classList.toggle('selected', i===n));
+  checkReady();
+}
+function checkReady() {
+  document.getElementById('btn-confirm').disabled = !(isSigned && selectedCoupons > 0);
+}
+
+function initSigCanvas() {
+  sigCanvas = document.getElementById('sig-canvas');
+  sigCtx = sigCanvas.getContext('2d');
+  sigCtx.strokeStyle = '#1a1d27'; sigCtx.lineWidth = 3;
+  sigCtx.lineCap = 'round'; sigCtx.lineJoin = 'round';
+  sigCanvas.addEventListener('pointerdown', startDraw);
+  sigCanvas.addEventListener('pointermove', draw);
+  sigCanvas.addEventListener('pointerup',   endDraw);
+  sigCanvas.addEventListener('pointerleave', endDraw);
+}
+function resizeSigCanvas() {
+  const w = document.getElementById('sig-wrap').clientWidth;
+  sigCanvas.width = w; sigCanvas.height = 180;
+  sigCtx.strokeStyle = '#1a1d27'; sigCtx.lineWidth = 3;
+  sigCtx.lineCap = 'round'; sigCtx.lineJoin = 'round';
+}
+function getPos(e) {
+  const rect = sigCanvas.getBoundingClientRect();
+  return { x: (e.clientX-rect.left)*(sigCanvas.width/rect.width), y: (e.clientY-rect.top)*(sigCanvas.height/rect.height) };
+}
+function startDraw(e) { sigDrawing=true; const {x,y}=getPos(e); sigCtx.beginPath(); sigCtx.moveTo(x,y); e.preventDefault(); }
+function draw(e) {
+  if (!sigDrawing) return;
+  const {x,y} = getPos(e);
+  sigCtx.lineTo(x,y); sigCtx.stroke();
+  document.getElementById('sig-hint').style.opacity = '0';
+  isSigned = true; checkReady(); e.preventDefault();
+}
+function endDraw() { sigDrawing = false; }
+function clearSig() {
+  if (!sigCanvas) return;
+  sigCtx.clearRect(0, 0, sigCanvas.width, sigCanvas.height);
+  document.getElementById('sig-hint').style.opacity = '1';
+  isSigned = false; checkReady();
+}
+
+async function submitConfirm() {
+  if (!currentPerson) return;
+  setSpinner(true);
+  // 1. Sauvegarder le nombre de coupons via GET
+  const r = await apiFetch('update', { rowIndex: currentPerson.rowIndex, recupere: selectedCoupons });
+  // 2. Sauvegarder la signature via POST no-cors
+  const sigData = sigCanvas.toDataURL('image/png');
+  await apiSaveSignature(currentPerson.rowIndex, selectedCoupons, sigData);
+  setSpinner(false);
+
+  document.getElementById('s-name').textContent = `Merci, ${currentPerson.prenom} !`;
+  document.getElementById('s-msg').textContent  = `Tu as confirmé ${selectedCoupons} coupon(s).`;
+  showScreen('success');
+  loadPeople();
+}
+
+function goSearch() {
+  showScreen('search');
+  document.getElementById('kiosk-search').value = '';
+  filterPeople();
+  currentPerson = null; isSigned = false; selectedCoupons = 0;
+}
+function setSpinner(v) { document.getElementById('spinner-overlay').className = v ? 'on' : ''; }
+</script>
+</body>
+</html>
