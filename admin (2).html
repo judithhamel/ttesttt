@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Coupons Repas — Administration</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Syne:wght@700;800&display=swap');
+  :root {
+    --bg:#0f1117;--surface:#1a1d27;--card:#21253a;--border:#2e3347;
+    --accent:#6c7cff;--accent2:#ff6b6b;--success:#4ecb8d;--warn:#f5a623;
+    --text:#e8eaf6;--muted:#7b82a8;--radius:12px;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;font-size:15px;min-height:100vh;}
+  header{display:flex;align-items:center;justify-content:space-between;padding:18px 32px;border-bottom:1px solid var(--border);background:var(--surface);position:sticky;top:0;z-index:100;}
+  .logo{font-family:'Syne',sans-serif;font-size:22px;font-weight:800;letter-spacing:-.5px;}
+  .logo span{color:var(--accent);}
+  .badge-admin{background:var(--accent);color:#fff;font-size:11px;font-weight:600;padding:3px 10px;border-radius:20px;letter-spacing:.5px;text-transform:uppercase;}
+  .header-actions{display:flex;gap:10px;align-items:center;}
+  main{max-width:1100px;margin:0 auto;padding:32px 24px;}
+  #config-banner{background:linear-gradient(135deg,#1e2240,#252a47);border:1px solid var(--accent);border-radius:var(--radius);padding:20px 24px;margin-bottom:28px;display:flex;align-items:flex-start;gap:16px;}
+  #config-banner .icon{font-size:24px;flex-shrink:0;margin-top:2px;}
+  #config-banner h3{font-size:15px;font-weight:600;margin-bottom:6px;}
+  #config-banner p{color:var(--muted);font-size:13px;line-height:1.6;}
+  #config-banner input{margin-top:10px;width:100%;padding:10px 14px;border-radius:8px;border:1px solid var(--border);background:var(--bg);color:var(--text);font-size:13px;font-family:monospace;}
+  #config-banner input:focus{outline:none;border-color:var(--accent);}
+  .stats{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:28px;}
+  .stat-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:18px 20px;}
+  .stat-card .label{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.6px;margin-bottom:8px;}
+  .stat-card .value{font-family:'Syne',sans-serif;font-size:28px;font-weight:800;}
+  .stat-card.accent .value{color:var(--accent);}
+  .stat-card.success .value{color:var(--success);}
+  .stat-card.warn .value{color:var(--warn);}
+  .stat-card.danger .value{color:var(--accent2);}
+  .toolbar{display:flex;gap:10px;align-items:center;margin-bottom:16px;flex-wrap:wrap;}
+  .toolbar input[type="text"]{flex:1;min-width:200px;padding:10px 14px;border-radius:8px;border:1px solid var(--border);background:var(--surface);color:var(--text);font-size:14px;}
+  .toolbar input:focus{outline:none;border-color:var(--accent);}
+  button{cursor:pointer;border:none;border-radius:8px;font-family:'Inter',sans-serif;font-size:14px;font-weight:500;transition:opacity .15s,transform .1s;}
+  button:active{transform:scale(.97);}
+  button:hover{opacity:.88;}
+  .btn-primary{background:var(--accent);color:#fff;padding:10px 18px;}
+  .btn-ghost{background:var(--surface);color:var(--text);border:1px solid var(--border);padding:10px 16px;}
+  .btn-danger{background:var(--accent2);color:#fff;padding:7px 12px;font-size:13px;}
+  .btn-success{background:var(--success);color:#0f1117;padding:7px 12px;font-size:13px;font-weight:600;}
+  .btn-warn{background:var(--warn);color:#0f1117;padding:7px 12px;font-size:13px;}
+  .btn-sm{padding:6px 11px;font-size:12px;}
+  .table-wrap{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;}
+  table{width:100%;border-collapse:collapse;}
+  thead{background:var(--card);}
+  th{padding:13px 16px;text-align:left;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.7px;color:var(--muted);}
+  td{padding:13px 16px;border-top:1px solid var(--border);font-size:14px;vertical-align:middle;}
+  tr:hover td{background:rgba(108,124,255,.04);}
+  .name-cell{font-weight:500;}
+  .name-cell small{display:block;color:var(--muted);font-size:12px;font-weight:400;}
+  .coupon-bar{height:6px;background:var(--border);border-radius:99px;margin-top:5px;overflow:hidden;}
+  .coupon-fill{height:100%;border-radius:99px;background:var(--success);transition:width .4s;}
+  .coupon-fill.full{background:var(--accent2);}
+  .sig-preview{max-width:80px;max-height:28px;border-radius:4px;background:#fff;}
+  .status-dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:6px;}
+  .dot-done{background:var(--success);}
+  .dot-partial{background:var(--warn);}
+  .dot-none{background:var(--border);}
+  td .actions{display:flex;gap:6px;}
+  .modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:500;align-items:center;justify-content:center;}
+  .modal-overlay.open{display:flex;}
+  .modal{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:28px;width:440px;max-width:95vw;}
+  .modal h2{font-family:'Syne',sans-serif;font-size:20px;font-weight:800;margin-bottom:20px;}
+  .field{margin-bottom:16px;}
+  .field label{display:block;font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.6px;margin-bottom:6px;}
+  .field input{width:100%;padding:11px 14px;border-radius:8px;border:1px solid var(--border);background:var(--bg);color:var(--text);font-size:14px;}
+  .field input:focus{outline:none;border-color:var(--accent);}
+  .modal-actions{display:flex;gap:10px;justify-content:flex-end;margin-top:20px;}
+  #toast{position:fixed;bottom:24px;right:24px;background:var(--card);border:1px solid var(--border);border-radius:10px;padding:14px 20px;font-size:14px;color:var(--text);transform:translateY(80px);opacity:0;transition:all .3s;z-index:999;max-width:320px;}
+  #toast.show{transform:translateY(0);opacity:1;}
+  #toast.ok{border-color:var(--success);}
+  #toast.err{border-color:var(--accent2);}
+  #loading{text-align:center;padding:60px;color:var(--muted);display:none;}
+  .spinner{width:36px;height:36px;border:3px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .8s linear infinite;margin:0 auto 14px;}
+  @keyframes spin{to{transform:rotate(360deg);}}
+  @media(max-width:700px){.stats{grid-template-columns:repeat(2,1fr);}header{padding:14px 16px;}main{padding:20px 14px;}}
+</style>
+</head>
+<body>
+<header>
+  <div class="logo">Coupons<span>Repas</span></div>
+  <div class="header-actions">
+    <span class="badge-admin">Admin</span>
+    <button class="btn-ghost" onclick="loadPeople()">↺ Actualiser</button>
+    <button class="btn-primary" onclick="openAddModal()">+ Ajouter</button>
+  </div>
+</header>
+<main>
+  <div id="config-banner">
+    <div class="icon">🔗</div>
+    <div style="flex:1">
+      <h3>Connexion Google Sheets</h3>
+      <p>Colle l'URL de déploiement de ton Apps Script, puis clique sur Actualiser.</p>
+      <input type="text" id="api-url" placeholder="https://script.google.com/macros/s/XXXXXXXXXX/exec" oninput="saveApiUrl()"/>
+    </div>
+  </div>
+  <div class="stats">
+    <div class="stat-card accent"><div class="label">Personnes</div><div class="value" id="stat-total">—</div></div>
+    <div class="stat-card success"><div class="label">Coupons pris</div><div class="value" id="stat-taken">—</div></div>
+    <div class="stat-card warn"><div class="label">Restants</div><div class="value" id="stat-remaining">—</div></div>
+    <div class="stat-card danger"><div class="label">Signatures manquantes</div><div class="value" id="stat-unsigned">—</div></div>
+  </div>
+  <div class="toolbar">
+    <input type="text" id="search" placeholder="Rechercher par nom…" oninput="renderTable()">
+    <button class="btn-ghost" onclick="exportCSV()">⬇ Exporter CSV</button>
+  </div>
+  <div id="loading"><div class="spinner"></div>Chargement…</div>
+  <div class="table-wrap">
+    <table>
+      <thead><tr>
+        <th>Nom / Prénom</th><th>Autorisé</th><th>Récupéré</th>
+        <th>Statut</th><th>Signature</th><th>Date</th><th>Actions</th>
+      </tr></thead>
+      <tbody id="tbody"></tbody>
+    </table>
+  </div>
+</main>
+
+<div class="modal-overlay" id="modal">
+  <div class="modal">
+    <h2 id="modal-title">Ajouter une personne</h2>
+    <div class="field"><label>Nom</label><input id="m-nom" type="text" placeholder="Hamel"></div>
+    <div class="field"><label>Prénom</label><input id="m-prenom" type="text" placeholder="Judith"></div>
+    <div class="field"><label>Coupons autorisés</label><input id="m-autorise" type="number" min="0" value="2"></div>
+    <div class="modal-actions">
+      <button class="btn-ghost" onclick="closeModal()">Annuler</button>
+      <button class="btn-primary" onclick="saveModal()">Enregistrer</button>
+    </div>
+  </div>
+</div>
+<div id="toast"></div>
+
+<script>
+let people = [];
+let editIndex = null;
+
+function saveApiUrl() { localStorage.setItem('apiUrl', document.getElementById('api-url').value.trim()); }
+function getApiUrl()  { return localStorage.getItem('apiUrl') || ''; }
+document.getElementById('api-url').value = getApiUrl();
+
+// Tout en GET — Apps Script gère doGet sans CORS
+async function api(action, params = {}) {
+  const base = getApiUrl();
+  if (!base) { toast("⚠️ Configure d'abord l'URL Apps Script.", 'err'); return null; }
+  const qs = new URLSearchParams({ action, ...params }).toString();
+  try {
+    const ctrl = new AbortController();
+    const timer = setTimeout(() => ctrl.abort(), 15000);
+    const res = await fetch(base + '?' + qs, { signal: ctrl.signal });
+    clearTimeout(timer);
+    const json = await res.json();
+    return json;
+  } catch(e) {
+    if (e.name === 'AbortError') toast('⏱ Délai dépassé — vérifie l\'URL Apps Script.', 'err');
+    else toast('❌ Erreur réseau : ' + e.message, 'err');
+    setLoading(false);
+    return null;
+  }
+}
+
+// Pour update (signature base64 trop longue pour GET) → iframe trick via Apps Script redirect
+async function apiUpdate(rowIndex, recupere, signature) {
+  const base = getApiUrl();
+  if (!base) return null;
+  // Envoie signature séparément : d'abord les coupons via GET, puis sig via POST no-cors
+  const r1 = await api('update', { rowIndex, recupere });
+  if (!r1) return null;
+  if (signature) {
+    // POST no-cors : on ne peut pas lire la réponse mais ça écrit quand même
+    try {
+      await fetch(base, {
+        method: 'POST',
+        mode: 'no-cors',
+        headers: { 'Content-Type': 'text/plain' },
+        body: JSON.stringify({ action: 'update', rowIndex, recupere, signature })
+      });
+    } catch(e) { /* no-cors ne retourne rien, c'est normal */ }
+  }
+  return { ok: true };
+}
+
+async function loadPeople() {
+  setLoading(true);
+  const data = await api('getAll');
+  setLoading(false);
+  if (!data) return;
+  if (!data.ok) { toast('❌ ' + (data.error || 'Erreur Apps Script'), 'err'); return; }
+  people = data.people || [];
+  updateStats();
+  renderTable();
+}
+
+function updateStats() {
+  const total    = people.length;
+  const taken    = people.reduce((s,p) => s + p.recupere, 0);
+  const autorise = people.reduce((s,p) => s + p.autorise, 0);
+  const unsigned = people.filter(p => p.recupere > 0 && !p.signature).length;
+  document.getElementById('stat-total').textContent     = total;
+  document.getElementById('stat-taken').textContent     = taken;
+  document.getElementById('stat-remaining').textContent = autorise - taken;
+  document.getElementById('stat-unsigned').textContent  = unsigned;
+}
+
+function renderTable() {
+  const q = document.getElementById('search').value.toLowerCase();
+  const filtered = people.filter(p => (p.nom+' '+p.prenom).toLowerCase().includes(q));
+  const tbody = document.getElementById('tbody');
+  if (!filtered.length) {
+    tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;padding:40px;color:var(--muted)">Aucune personne trouvée</td></tr>`;
+    return;
+  }
+  tbody.innerHTML = filtered.map(p => {
+    const pct  = p.autorise ? Math.round((p.recupere/p.autorise)*100) : 0;
+    const full = p.recupere >= p.autorise && p.autorise > 0;
+    const dot  = p.signature ? 'done' : p.recupere > 0 ? 'partial' : 'none';
+    const lbl  = p.signature ? 'Signé' : p.recupere > 0 ? 'Partiel' : 'En attente';
+    const sig  = p.signature
+      ? `<img class="sig-preview" src="${p.signature}" alt="sig">`
+      : `<span style="color:var(--muted);font-size:13px">—</span>`;
+    return `<tr>
+      <td class="name-cell">${p.nom}<small>${p.prenom}</small></td>
+      <td>${p.autorise}</td>
+      <td><strong>${p.recupere}</strong>
+        <div class="coupon-bar"><div class="coupon-fill ${full?'full':''}" style="width:${pct}%"></div></div>
+      </td>
+      <td><span class="status-dot dot-${dot}"></span>${lbl}</td>
+      <td>${sig}</td>
+      <td style="font-size:13px;color:var(--muted)">${p.date||'—'}</td>
+      <td><div class="actions">
+        <button class="btn-warn btn-sm" onclick="editPerson(${p.rowIndex})">✏️</button>
+        <button class="btn-success btn-sm" onclick="resetPerson(${p.rowIndex})">↺</button>
+        <button class="btn-danger btn-sm" onclick="deletePerson(${p.rowIndex})">✕</button>
+      </div></td>
+    </tr>`;
+  }).join('');
+}
+
+function openAddModal() {
+  editIndex = null;
+  document.getElementById('modal-title').textContent = 'Ajouter une personne';
+  document.getElementById('m-nom').value = '';
+  document.getElementById('m-prenom').value = '';
+  document.getElementById('m-autorise').value = 2;
+  document.getElementById('modal').classList.add('open');
+}
+function editPerson(rowIndex) {
+  const p = people.find(x => x.rowIndex === rowIndex);
+  if (!p) return;
+  editIndex = rowIndex;
+  document.getElementById('modal-title').textContent = 'Modifier la personne';
+  document.getElementById('m-nom').value     = p.nom;
+  document.getElementById('m-prenom').value  = p.prenom;
+  document.getElementById('m-autorise').value = p.autorise;
+  document.getElementById('modal').classList.add('open');
+}
+function closeModal() { document.getElementById('modal').classList.remove('open'); }
+
+async function saveModal() {
+  const nom     = document.getElementById('m-nom').value.trim();
+  const prenom  = document.getElementById('m-prenom').value.trim();
+  const autorise = parseInt(document.getElementById('m-autorise').value);
+  if (!nom || !prenom) { toast('Nom et prénom requis.', 'err'); return; }
+  let res;
+  if (editIndex) {
+    res = await api('update', { rowIndex: editIndex, recupere: people.find(p=>p.rowIndex===editIndex)?.recupere||0 });
+  } else {
+    res = await api('add', { nom, prenom, autorise });
+  }
+  closeModal();
+  if (res?.ok) { toast('✅ Enregistré !', 'ok'); loadPeople(); }
+  else          toast('❌ Erreur : ' + (res?.error||'?'), 'err');
+}
+
+async function deletePerson(rowIndex) {
+  if (!confirm('Supprimer cette personne ?')) return;
+  const res = await api('delete', { rowIndex });
+  if (res?.ok) { toast('🗑 Supprimé', 'ok'); loadPeople(); }
+  else         toast('❌ Erreur', 'err');
+}
+async function resetPerson(rowIndex) {
+  if (!confirm('Réinitialiser les coupons et la signature ?')) return;
+  const res = await api('reset', { rowIndex });
+  if (res?.ok) { toast('↺ Réinitialisé', 'ok'); loadPeople(); }
+  else         toast('❌ Erreur', 'err');
+}
+
+function exportCSV() {
+  const rows = [['Nom','Prénom','Autorisé','Récupéré','Signé','Date']];
+  people.forEach(p => rows.push([p.nom,p.prenom,p.autorise,p.recupere,p.signature?'Oui':'Non',p.date||'']));
+  const csv = rows.map(r => r.map(c => '"'+String(c).replace(/"/g,'""')+'"').join(',')).join('\n');
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob(['\ufeff'+csv],{type:'text/csv;charset=utf-8'}));
+  a.download = 'coupons_repas.csv';
+  a.click();
+}
+
+function setLoading(v) { document.getElementById('loading').style.display = v ? 'block' : 'none'; }
+let toastTimer;
+function toast(msg, type='ok') {
+  const el = document.getElementById('toast');
+  el.textContent = msg; el.className = 'show '+type;
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.className = '', 3500);
+}
+document.getElementById('modal').addEventListener('click', e => { if(e.target===e.currentTarget) closeModal(); });
+
+// Init
+if (getApiUrl()) loadPeople();
+else document.getElementById('tbody').innerHTML =
+  `<tr><td colspan="7" style="text-align:center;padding:40px;color:var(--muted)">👆 Entre l'URL Apps Script ci-dessus puis clique sur Actualiser</td></tr>`;
+</script>
+</body>
+</html>
